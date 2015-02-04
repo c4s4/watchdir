@@ -6,22 +6,27 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"strings"
+	"regexp"
 )
 
-func executor(watcher *fsnotify.Watcher, command []string) {
+func executor(watcher *fsnotify.Watcher, command string) {
 	for {
 		select {
 		case event := <-watcher.Events:
 			log.Println("Triggered event:", event)
 			if event.Op&fsnotify.Create == fsnotify.Create {
-				name := command[0]
-				params := append(command[1:], event.Name)
-				cmd := exec.Command(name, params...)
-				log.Println("Running command:", name, strings.Join(params, " "))
+				matched, _ := regexp.MatchString("[^%]%s", command)
+				var script string
+				if matched {
+					script = fmt.Sprintf(command, event.Name)
+				} else {
+					script = command
+				}
+				cmd := exec.Command("sh", "-c", script)
+				log.Println("Running command:", script)
 				output, err := cmd.CombinedOutput()
 				if err != nil {
-					log.Println("Error running command:", output)
+					log.Println("Error running command:", string(output))
 				}
 			}
 		case err := <-watcher.Errors:
@@ -30,7 +35,7 @@ func executor(watcher *fsnotify.Watcher, command []string) {
 	}
 }
 
-func watch(dir string, command []string) {
+func watch(dir string, command string) {
 	log.Println("Watching directory", dir)
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
@@ -52,6 +57,6 @@ func main() {
 		os.Exit(1)
 	}
 	dir := os.Args[1]
-	command := os.Args[2:]
+	command := os.Args[2]
 	watch(dir, command)
 }
