@@ -1,5 +1,9 @@
 package main
 
+// This program uses fsnotify library that defines following file events:
+// CREATE, REMOVE, WRITE, RENAME and CHMOD. See sources at
+// https://github.com/go-fsnotify/fsnotify/blob/master/fsnotify.go#L35
+
 import (
 	"fmt"
 	"github.com/go-fsnotify/fsnotify"
