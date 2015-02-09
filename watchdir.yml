@@ -1,0 +1,3 @@
+# Directory events are the following: CREATE, REMOVE, WRITE, RENAME and CHMOD.
+/tmp:
+    CREATE: echo "TEST"
