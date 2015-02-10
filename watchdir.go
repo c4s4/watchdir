@@ -11,6 +11,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"regexp"
 )
 
 const (
@@ -23,15 +24,65 @@ type Events map[fsnotify.Op]string
 
 type Configuration map[string]Events
 
+func eventToString(e fsnotify.Op) string {
+	switch e {
+	case fsnotify.Create:
+		return "CREATE"
+	case fsnotify.Write:
+		return "WRITE"
+	case fsnotify.Remove:
+		return "REMOVE"
+	case fsnotify.Rename:
+		return "RENAME"
+	case fsnotify.Chmod:
+		return "CHMOD"
+	default:
+		return ""
+	}
+}
+
+func nodeToEvents(n yaml.Node) Events {
+	e := make(Events)
+	for event, node := range nodeToMap(n) {
+		command := nodeToString(node)
+		switch event {
+		case "CREATE":
+			e[fsnotify.Create] = command
+		case "WRITE":
+			e[fsnotify.Write] = command
+		case "REMOVE":
+			e[fsnotify.Remove] = command
+		case "RENAME":
+			e[fsnotify.Rename] = command
+		case "CHMOD":
+			e[fsnotify.Chmod] = command
+		default:
+			log.Fatal(fmt.Sprintf("Unknown event '%s'", event))
+		}
+	}
+	return e
+}
+
 func executor(watcher *fsnotify.Watcher, events Events) {
+	r := regexp.MustCompile("%(f|e)")
 	for {
 		select {
 		case event := <-watcher.Events:
 			log.Println("Triggered event:", event)
 			for e, command := range events {
 				if event.Op&e == e {
-					c := exec.Command("sh", "-c", command)
-					log.Println("Running command:", command)
+					cmd := r.ReplaceAllStringFunc(command, func(s string) string {
+						switch s {
+						case "%e":
+							return eventToString(e)
+						case "%f":
+							return event.Name
+						default:
+							return s
+						}
+					})
+					c := exec.Command("sh", "-c", cmd)
+					log.Println("Running command:", cmd)
 					output, err := c.CombinedOutput()
 					if err != nil {
 						log.Println("Error running command:", string(output))
@@ -58,28 +109,6 @@ func watch(dir string, events Events) {
 		log.Fatal(err)
 	}
 	<-done
-}
-
-func nodeToEvents(n yaml.Node) Events {
-	e := make(Events)
-	for event, node := range nodeToMap(n) {
-		command := nodeToString(node)
-		switch event {
-		case "CREATE":
-			e[fsnotify.Create] = command
-		case "WRITE":
-			e[fsnotify.Write] = command
-		case "REMOVE":
-			e[fsnotify.Remove] = command
-		case "RENAME":
-			e[fsnotify.Rename] = command
-		case "CHMOD":
-			e[fsnotify.Chmod] = command
-		default:
-			log.Fatal(fmt.Sprintf("Unknown event '%s'", event))
-		}
-	}
-	return e
 }
 
 func nodeToMap(node yaml.Node) yaml.Map {
