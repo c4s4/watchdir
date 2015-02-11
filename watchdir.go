@@ -85,12 +85,12 @@ func executor(watcher *fsnotify.Watcher, events Events) {
 					log.Println("Running command:", cmd)
 					output, err := c.CombinedOutput()
 					if err != nil {
-						log.Println("Error running command:", string(output))
+						log.Println("ERROR running command:", string(output))
 					}
 				}
 			}
 		case err := <-watcher.Errors:
-			log.Println("error:", err)
+			log.Println("ERROR:", err)
 		}
 	}
 }
@@ -114,7 +114,7 @@ func watch(dir string, events Events) {
 func nodeToMap(node yaml.Node) yaml.Map {
 	m, ok := node.(yaml.Map)
 	if !ok {
-		log.Fatal(fmt.Sprintf("%v is not of type map", node))
+		log.Fatal(fmt.Sprintf("ERROR parsing configuration file: %v is not of type map", node))
 	}
 	return m
 }
@@ -122,7 +122,7 @@ func nodeToMap(node yaml.Node) yaml.Map {
 func nodeToString(node yaml.Node) string {
 	s, ok := node.(yaml.Scalar)
 	if !ok {
-		log.Fatal(fmt.Sprintf("%v is not of type scalar", node))
+		log.Fatal(fmt.Sprintf("ERROR parsing configuration file: %v is not of type scalar", node))
 	}
 	return s.String()
 }
@@ -131,7 +131,7 @@ func loadConfig(file string) Configuration {
 	config := make(Configuration)
 	doc, err := yaml.ReadFile(file)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("ERROR parsing configuration file:", err)
 	}
 	for d, e := range nodeToMap(doc.Root) {
 		config[d] = nodeToEvents(e)
