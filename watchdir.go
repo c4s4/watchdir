@@ -57,7 +57,7 @@ func nodeToEvents(n yaml.Node) Events {
 		case "CHMOD":
 			e[fsnotify.Chmod] = command
 		default:
-			log.Fatal(fmt.Sprintf("Unknown event '%s'", event))
+			log.Fatal(fmt.Sprintf("ERROR: unknown event '%s'", event))
 		}
 	}
 	return e
@@ -122,7 +122,7 @@ func nodeToMap(node yaml.Node) yaml.Map {
 func nodeToString(node yaml.Node) string {
 	s, ok := node.(yaml.Scalar)
 	if !ok {
-		log.Fatal(fmt.Sprintf("ERROR parsing configuration file: %v is not of type scalar", node))
+		log.Fatal(fmt.Sprintf("ERROR parsing configuration file: %v is not of type string", node))
 	}
 	return s.String()
 }

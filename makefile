@@ -5,4 +5,4 @@ build:
 	go build watchdir.go
 
 clean:
-	rm watchdir
+	rm -f watchdir
