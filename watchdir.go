@@ -151,6 +151,6 @@ func main() {
 	}
 	configuration := loadConfig(configFile)
 	for dir, events := range configuration {
-		watch(dir, events)
+		go watch(dir, events)
 	}
 }
