@@ -3,6 +3,11 @@
 # - %f is replaced with the file name.
 # - %e is replaced with the event name.
 # - %% is replaced with character %.
+
 /tmp:
+    CREATE: 'echo "%e: %f %%e %%f %%"'
+    REMOVE: 'echo "%e: %f"'
+
+~/tmp:
     CREATE: 'echo "%e: %f %%e %%f %%"'
     REMOVE: 'echo "%e: %f"'

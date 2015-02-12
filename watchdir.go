@@ -150,6 +150,7 @@ func main() {
 	configuration := loadConfig(configFile)
 	done := make(chan bool)
 	for dir, events := range configuration {
+		dir = expandUser(dir)
 		watch(dir, events)
 	}
 	<-done
