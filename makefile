@@ -1,6 +1,7 @@
-run: clean test build
-	./watchdir watchdir.yml
+all: clean test build
 
+clean:
+	rm -f watchdir
 
 test:
 	go test
@@ -8,5 +9,9 @@ test:
 build:
 	go build watchdir.go
 
-clean:
-	rm -f watchdir
+run: clean test build
+	go run watchdir.go watchdir.yml
+
+install: clean test build
+	sudo cp watchdir /opt/bin/
+	sudo cp watchdir.init /etc/init.d/watchdir

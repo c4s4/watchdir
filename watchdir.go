@@ -1,10 +1,7 @@
 package main
 
-// This program uses fsnotify library that defines following file events:
-// CREATE, REMOVE, WRITE, RENAME and CHMOD. See sources at
-// https://github.com/go-fsnotify/fsnotify/blob/master/fsnotify.go#L35
-
 import (
+	"errors"
 	"fmt"
 	"github.com/go-fsnotify/fsnotify"
 	"gopkg.in/yaml.v2"
@@ -15,27 +12,24 @@ import (
 	"os/user"
 	"regexp"
 	"strings"
+	"sync"
 )
 
-var HELP = `watchdir [config]
-config   Configuration file (defaults to '/etc/watchdir.yml')`
-
-var DEFAULT_CONFIGS = []string{"~/.watchdir.yml", "/etc/watchdir.yml"}
-
+var HELP = `watchdir [config(s)]
+config Configuration file(s) (defaults to '~/.watchdir.yml' or '/etc/watchdir.yml')`
+var USER_CONFIG = "~/.watchdir.yml"
+var SYS_CONFIG = "/etc/watchdir.yml"
 var REGEXP = regexp.MustCompile("%(f|e|%)")
 
-type Configuration map[Directory]Events
+// Configuration is a map that gives Events for a directory
+type Configuration map[string]Events
 
-type Directory string
+// Events is a map that gives a command for an event
+type Events map[string]string
 
-type Events map[Event]Command
-
-type Command string
-
-type Event string
-
-func (e Event) Op() fsnotify.Op {
-	switch e {
+// EventCode return a code of a given event.
+func EventCode(s string) fsnotify.Op {
+	switch s {
 	case "CREATE":
 		return fsnotify.Create
 	case "WRITE":
@@ -47,12 +41,14 @@ func (e Event) Op() fsnotify.Op {
 	case "CHMOD":
 		return fsnotify.Chmod
 	default:
-		panic(fmt.Sprintf("Unknown event '%s'", e))
+		panic(fmt.Sprintf("Unknown event '%s'", s))
 	}
 }
 
-func processCommand(command, file, event string) string {
-	return REGEXP.ReplaceAllStringFunc(string(command), func(s string) string {
+// ExpandCommand replace '%f' with file name and '%e' with event in a given
+// command.
+func ExpandCommand(command, file, event string) string {
+	return REGEXP.ReplaceAllStringFunc(command, func(s string) string {
 		switch s {
 		case "%f":
 			return file
@@ -66,57 +62,71 @@ func processCommand(command, file, event string) string {
 	})
 }
 
-func executor(watcher *fsnotify.Watcher, events Events) {
+// Execute a given command, if an error occurs, it is logged.
+func ExecuteCommand(command, file, event string) {
+	expanded := ExpandCommand(command, file, event)
+	log.Println("Running command:", expanded)
+	c := exec.Command("sh", "-c", expanded)
+	output, err := c.CombinedOutput()
+	if err != nil {
+		log.Println("Error running command:", string(output))
+	}
+}
+
+// WatchDirectory fires commands when specific events are triggered in a given
+// directory.
+func WatchDirectory(directory string, events Events, waitGroup *sync.WaitGroup) {
+	defer waitGroup.Done()
+	log.Println("Watching directory", directory)
+	if _, err := os.Stat(directory); os.IsNotExist(err) {
+		log.Println("Directory", directory, "not found")
+		return
+	}
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		log.Println(err.Error())
+		return
+	}
+	defer watcher.Close()
+	err = watcher.Add(directory)
+	if err != nil {
+		log.Println(err.Error())
+		return
+	}
 	for {
 		select {
 		case event := <-watcher.Events:
-			log.Println("Triggered event:", event)
+			log.Println("Triggered event", event)
 			for e, command := range events {
-				if event.Op&e.Op() == e.Op() {
-					cmd := processCommand(string(command), event.Name, string(e))
-					c := exec.Command("sh", "-c", cmd)
-					log.Println("Running command:", cmd)
-					output, err := c.CombinedOutput()
-					if err != nil {
-						log.Println("ERROR running command:", string(output))
-					}
+				if event.Op&EventCode(e) == EventCode(e) {
+					ExecuteCommand(command, event.Name, e)
 				}
 			}
 		case err := <-watcher.Errors:
-			log.Println("ERROR:", err)
+			log.Println(err.Error())
 		}
 	}
 }
 
-func watch(dir Directory, events Events) {
-	log.Println("Watching directory", dir)
-	watcher, err := fsnotify.NewWatcher()
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer watcher.Close()
-	go executor(watcher, events)
-	err = watcher.Add(string(dir))
-	if err != nil {
-		log.Fatal(err)
-	}
-}
-
-func loadConfig(file string) Configuration {
+// LoadConfiguration loads configuration from file.
+func LoadConfiguration(file string) (Configuration, error) {
 	log.Println("Loading configuration file", file)
-	config := make(Configuration)
+	configuration := make(Configuration)
 	source, err := ioutil.ReadFile(file)
 	if err != nil {
-		log.Fatal("ERROR loading configuration file:", err)
+		return configuration, err
 	}
-	err = yaml.Unmarshal(source, &config)
+	err = yaml.Unmarshal(source, &configuration)
 	if err != nil {
-		log.Fatal("ERROR parsing configuration file:", err)
+		return configuration, err
 	}
-	return config
+	return configuration, nil
 }
 
-func expandUser(file string) string {
+// ExpandUser expand file names starting with '~/' by the user directory.
+// Thus '~/.watchdir.yml' would be expanded to '/home/foo/.watchdir.yml' for
+// user foo.
+func ExpandUser(file string) string {
 	if file[:2] == "~/" {
 		usr, _ := user.Current()
 		dir := usr.HomeDir
@@ -126,32 +136,40 @@ func expandUser(file string) string {
 	}
 }
 
-func main() {
-	var configFile string
+// ConfigFile return user expanded configuration file:
+// - Configuration file passed on command line if any.
+// - User sonfiguration file '~/.watchdir.yml' if it exists.
+// - System configuration file '/etc/watchdir.yml' if it exists.
+// - Panic if none is found.
+func ConfigFile() (string, error) {
 	if len(os.Args) == 2 {
-		configFile = expandUser(os.Args[1])
+		return ExpandUser(os.Args[1]), nil
+	} else if len(os.Args) < 2 {
+		if _, err := os.Stat(USER_CONFIG); err == nil {
+			return ExpandUser(USER_CONFIG), nil
+		}
+		if _, err := os.Stat(SYS_CONFIG); err == nil {
+			return SYS_CONFIG, nil
+		}
+		return "", errors.New("Configuration file not found")
 	} else {
-		for _, conf := range DEFAULT_CONFIGS {
-			conf = expandUser(conf)
-			if _, err := os.Stat(conf); err == nil {
-				configFile = conf
-				break
-			}
-		}
-		if len(configFile) == 0 {
-			log.Fatal("ERROR: configuration file not found")
-		}
+		return "", errors.New("You can pass one configuration file on command line")
 	}
-	if len(os.Args) > 2 {
-		fmt.Println("ERROR: you may pass only one configuration file on command line")
-		fmt.Println(HELP)
-		os.Exit(1)
+}
+
+func main() {
+	configurationFile, err := ConfigFile()
+	if err != nil {
+		log.Fatal(err)
 	}
-	configuration := loadConfig(configFile)
-	done := make(chan bool)
-	for dir, events := range configuration {
-		dir = expandUser(dir)
-		watch(dir, events)
+	configuration, err := LoadConfiguration(configurationFile)
+	if err != nil {
+		log.Fatal(err)
 	}
-	<-done
+	waitGroup := &sync.WaitGroup{}
+	for directory, events := range configuration {
+		waitGroup.Add(1)
+		go WatchDirectory(ExpandUser(directory), events, waitGroup)
+	}
+	waitGroup.Wait()
 }

@@ -1,12 +1,23 @@
 package main
 
-import "testing"
+import (
+	"os/user"
+	"testing"
+)
 
-func TestProcessCommand(t *testing.T) {
-	c := "%f %e %% %x"
-	a := processCommand(c, "file", "event")
+func TestExpandCommand(t *testing.T) {
 	e := "file event % %x"
-	if a != e {
+	a := ExpandCommand("%f %e %% %x", "file", "event")
+	if e != a {
 		t.Error("Bad processed command")
+	}
+}
+
+func TestExpandUser(t *testing.T) {
+	user, _ := user.Current()
+	e := "/home/" + user.Username + "/foo"
+	a := ExpandUser("~/foo")
+	if e != a {
+		t.Error("User directory not expanded as expected", e, "!=", a)
 	}
 }
