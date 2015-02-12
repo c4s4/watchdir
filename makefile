@@ -1,5 +1,9 @@
-run: clean build
+run: clean test build
 	./watchdir watchdir.yml
+
+
+test:
+	go test
 
 build:
 	go build watchdir.go

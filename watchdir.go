@@ -21,6 +21,8 @@ const (
 config   Configuration file (defaults to '/etc/watchdir.yml')`
 )
 
+var REGEXP = regexp.MustCompile("%(f|e|%)")
+
 type Configuration map[Directory]Events
 
 type Directory string
@@ -48,26 +50,29 @@ func (e Event) Op() fsnotify.Op {
 	}
 }
 
+func processCommand(command, file, event string) string {
+	return REGEXP.ReplaceAllStringFunc(string(command), func(s string) string {
+		switch s {
+		case "%f":
+			return file
+		case "%e":
+			return event
+		case "%%":
+			return "%"
+		default:
+			return s
+		}
+	})
+}
+
 func executor(watcher *fsnotify.Watcher, events Events) {
-	r := regexp.MustCompile("%(f|e|%)")
 	for {
 		select {
 		case event := <-watcher.Events:
 			log.Println("Triggered event:", event)
 			for e, command := range events {
 				if event.Op&e.Op() == e.Op() {
-					cmd := r.ReplaceAllStringFunc(string(command), func(s string) string {
-						switch s {
-						case "%e":
-							return string(e)
-						case "%f":
-							return event.Name
-						case "%%":
-						 return "%"
-						default:
-							return s
-						}
-					})
+					cmd := processCommand(string(command), event.Name, string(e))
 					c := exec.Command("sh", "-c", cmd)
 					log.Println("Running command:", cmd)
 					output, err := c.CombinedOutput()

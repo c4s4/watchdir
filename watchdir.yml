@@ -1,4 +1,8 @@
 # Directory events are the following: CREATE, REMOVE, WRITE, RENAME and CHMOD.
+# Following replacements are made in comands:
+# - %f is replaced with the file name.
+# - %e is replaced with the event name.
+# - %% is replaced with character %.
 /tmp:
-    CREATE: 'echo "%e: %f"'
+    CREATE: 'echo "%e: %f %%e %%f %%"'
     REMOVE: 'echo "%e: %f"'
