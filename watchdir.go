@@ -7,7 +7,8 @@ package main
 import (
 	"fmt"
 	"github.com/go-fsnotify/fsnotify"
-	"github.com/kylelemons/go-gypsy/yaml"
+	"gopkg.in/yaml.v2"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -20,47 +21,31 @@ const (
 config   Configuration file (defaults to '/etc/watchdir.yml')`
 )
 
-type Events map[fsnotify.Op]string
+type Configuration map[Directory]Events
 
-type Configuration map[string]Events
+type Directory string
 
-func eventToString(e fsnotify.Op) string {
+type Events map[Event]Command
+
+type Command string
+
+type Event string
+
+func (e Event) Op() fsnotify.Op {
 	switch e {
-	case fsnotify.Create:
-		return "CREATE"
-	case fsnotify.Write:
-		return "WRITE"
-	case fsnotify.Remove:
-		return "REMOVE"
-	case fsnotify.Rename:
-		return "RENAME"
-	case fsnotify.Chmod:
-		return "CHMOD"
+	case "CREATE":
+		return fsnotify.Create
+	case "WRITE":
+		return fsnotify.Write
+	case "REMOVE":
+		return fsnotify.Remove
+	case "RENAME":
+		return fsnotify.Rename
+	case "CHMOD":
+		return fsnotify.Chmod
 	default:
-		return ""
+		panic(fmt.Sprintf("Unknown event '%s'", e))
 	}
-}
-
-func nodeToEvents(n yaml.Node) Events {
-	e := make(Events)
-	for event, node := range nodeToMap(n) {
-		command := nodeToString(node)
-		switch event {
-		case "CREATE":
-			e[fsnotify.Create] = command
-		case "WRITE":
-			e[fsnotify.Write] = command
-		case "REMOVE":
-			e[fsnotify.Remove] = command
-		case "RENAME":
-			e[fsnotify.Rename] = command
-		case "CHMOD":
-			e[fsnotify.Chmod] = command
-		default:
-			log.Fatal(fmt.Sprintf("ERROR: unknown event '%s'", event))
-		}
-	}
-	return e
 }
 
 func executor(watcher *fsnotify.Watcher, events Events) {
@@ -70,11 +55,11 @@ func executor(watcher *fsnotify.Watcher, events Events) {
 		case event := <-watcher.Events:
 			log.Println("Triggered event:", event)
 			for e, command := range events {
-				if event.Op&e == e {
-					cmd := r.ReplaceAllStringFunc(command, func(s string) string {
+				if event.Op&e.Op() == e.Op() {
+					cmd := r.ReplaceAllStringFunc(string(command), func(s string) string {
 						switch s {
 						case "%e":
-							return eventToString(e)
+							return string(e)
 						case "%f":
 							return event.Name
 						default:
@@ -95,7 +80,7 @@ func executor(watcher *fsnotify.Watcher, events Events) {
 	}
 }
 
-func watch(dir string, events Events) {
+func watch(dir Directory, events Events) {
 	log.Println("Watching directory", dir)
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
@@ -104,37 +89,22 @@ func watch(dir string, events Events) {
 	defer watcher.Close()
 	done := make(chan bool)
 	go executor(watcher, events)
-	err = watcher.Add(dir)
+	err = watcher.Add(string(dir))
 	if err != nil {
 		log.Fatal(err)
 	}
 	<-done
 }
 
-func nodeToMap(node yaml.Node) yaml.Map {
-	m, ok := node.(yaml.Map)
-	if !ok {
-		log.Fatal(fmt.Sprintf("ERROR parsing configuration file: %v is not of type map", node))
-	}
-	return m
-}
-
-func nodeToString(node yaml.Node) string {
-	s, ok := node.(yaml.Scalar)
-	if !ok {
-		log.Fatal(fmt.Sprintf("ERROR parsing configuration file: %v is not of type string", node))
-	}
-	return s.String()
-}
-
 func loadConfig(file string) Configuration {
 	config := make(Configuration)
-	doc, err := yaml.ReadFile(file)
+	source, err := ioutil.ReadFile(file)
+	if err != nil {
+		log.Fatal("ERROR loading configuration file:", err)
+	}
+	err = yaml.Unmarshal(source, &config)
 	if err != nil {
 		log.Fatal("ERROR parsing configuration file:", err)
-	}
-	for d, e := range nodeToMap(doc.Root) {
-		config[d] = nodeToEvents(e)
 	}
 	return config
 }

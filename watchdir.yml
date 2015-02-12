@@ -1,3 +1,4 @@
 # Directory events are the following: CREATE, REMOVE, WRITE, RENAME and CHMOD.
 /tmp:
-    CREATE: echo 'Event: %e, File: %f, Untouched: %%'
+    CREATE: 'echo "%e: %f"'
+    REMOVE: 'echo "%e: %f"'
