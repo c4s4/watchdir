@@ -12,14 +12,15 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"os/user"
 	"regexp"
+	"strings"
 )
 
-const (
-	DEFAULT_CONFIG = "/etc/watchdir.yml"
-	HELP           = `watchdir [config]
+var HELP = `watchdir [config]
 config   Configuration file (defaults to '/etc/watchdir.yml')`
-)
+
+var DEFAULT_CONFIGS = []string{"~/.watchdir.yml", "/etc/watchdir.yml"}
 
 var REGEXP = regexp.MustCompile("%(f|e|%)")
 
@@ -104,6 +105,7 @@ func watch(dir Directory, events Events) {
 }
 
 func loadConfig(file string) Configuration {
+	log.Println("Loading configuration file", file)
 	config := make(Configuration)
 	source, err := ioutil.ReadFile(file)
 	if err != nil {
@@ -116,10 +118,31 @@ func loadConfig(file string) Configuration {
 	return config
 }
 
+func expandUser(file string) string {
+	if file[:2] == "~/" {
+		usr, _ := user.Current()
+		dir := usr.HomeDir
+		return strings.Replace(file, "~", dir, 1)
+	} else {
+		return file
+	}
+}
+
 func main() {
-	configFile := DEFAULT_CONFIG
+	var configFile string
 	if len(os.Args) == 2 {
-		configFile = os.Args[1]
+		configFile = expandUser(os.Args[1])
+	} else {
+		for _, conf := range DEFAULT_CONFIGS {
+			conf = expandUser(conf)
+			if _, err := os.Stat(conf); err == nil {
+				configFile = conf
+				break
+			}
+		}
+		if len(configFile) == 0 {
+			log.Fatal("ERROR: configuration file not found")
+		}
 	}
 	if len(os.Args) > 2 {
 		fmt.Println("ERROR: you may pass only one configuration file on command line")
