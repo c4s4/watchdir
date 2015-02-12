@@ -95,13 +95,11 @@ func watch(dir Directory, events Events) {
 		log.Fatal(err)
 	}
 	defer watcher.Close()
-	done := make(chan bool)
 	go executor(watcher, events)
 	err = watcher.Add(string(dir))
 	if err != nil {
 		log.Fatal(err)
 	}
-	<-done
 }
 
 func loadConfig(file string) Configuration {
@@ -150,7 +148,9 @@ func main() {
 		os.Exit(1)
 	}
 	configuration := loadConfig(configFile)
+	done := make(chan bool)
 	for dir, events := range configuration {
-		go watch(dir, events)
+		watch(dir, events)
 	}
+	<-done
 }
