@@ -49,7 +49,7 @@ func (e Event) Op() fsnotify.Op {
 }
 
 func executor(watcher *fsnotify.Watcher, events Events) {
-	r := regexp.MustCompile("%(f|e)")
+	r := regexp.MustCompile("%(f|e|%)")
 	for {
 		select {
 		case event := <-watcher.Events:
@@ -62,6 +62,8 @@ func executor(watcher *fsnotify.Watcher, events Events) {
 							return string(e)
 						case "%f":
 							return event.Name
+						case "%%":
+						 return "%"
 						default:
 							return s
 						}
