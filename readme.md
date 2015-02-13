@@ -54,4 +54,9 @@ To remove it from boot sequence:
 
     update-rc.d -f watchdir remove
 
+History
+-------
+
+- *1.0.0* (2015-02-13): First release.
+
 *Enjoy!*
