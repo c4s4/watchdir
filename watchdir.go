@@ -96,9 +96,9 @@ func WatchDirectory(directory string, events Events, waitGroup *sync.WaitGroup) 
 	for {
 		select {
 		case event := <-watcher.Events:
-			log.Println("Triggered event", event)
 			for e, command := range events {
 				if event.Op&EventCode(e) == EventCode(e) {
+				 log.Println("Triggered event", event)
 					ExecuteCommand(command, event.Name, e)
 				}
 			}
