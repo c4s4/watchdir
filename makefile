@@ -18,6 +18,6 @@ install: clean test build
 	sudo cp watchdir /opt/bin/
 	sudo cp watchdir.init /etc/init.d/watchdir
 
-release:
+release: clean test build
 	git tag "RELEASE-$(VERSION)"
 	git push --tag
