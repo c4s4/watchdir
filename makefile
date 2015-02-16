@@ -19,11 +19,6 @@ install: clean test build
 	sudo cp watchdir.init /etc/init.d/watchdir
 
 release: clean test build
-	@if [ ! -z `git diff --quiet --exit-code HEAD` ]; then \
-		echo "There are uncommitted changes"; \
-		exit 1; \
-	fi
-	# DEBUG
-	echo "FAILED!"
-	#git tag "RELEASE-$(VERSION)"
-	#git push --tag
+	git diff --quiet --exit-code HEAD || (echo "There are uncommitted changes"; exit 1)
+	git tag "RELEASE-$(VERSION)"
+	git push --tag
