@@ -3,6 +3,7 @@ NAME=watchdir
 SOURCE=$(NAME).go
 CONFIG=$(NAME).yml
 BUILD_DIR=build
+DEPLOY=casa@sweetohm.net:/home/web/watchdir
 PLATFORM=$(subst /,-,$(lastword $(shell go version)))
 
 all: clean test build
@@ -41,3 +42,4 @@ binary: clean build
 	cp license readme.md $(BUILD_DIR)/$(NAME)
 	cd $(BUILD_DIR) && tar cvf $(NAME)-$(PLATFORM)-$(VERSION).tar $(NAME)/*
 	gzip $(BUILD_DIR)/$(NAME)-$(PLATFORM)-$(VERSION).tar
+	scp $(BUILD_DIR)/$(NAME)-$(PLATFORM)-$(VERSION).tar.gz $(DEPLOY)
