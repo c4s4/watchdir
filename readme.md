@@ -1,7 +1,7 @@
 Watchdir
 ========
 
-Tool to watch directories and run commands when given file events are triggered (possible events are *CREATE*, *REMOVE*, *WRITE*, *RENAME* and *CHMOD*).
+Tool to watch directories and run commands when given file events are triggered (possible events are *CREATE*, *REMOVE*, *WRITE*, *RENAME* and *CHMOD*). Licensed under [GPL V3](http://www.gnu.org/licenses/gpl.html).
 
 Usage
 -----
@@ -57,6 +57,6 @@ To remove it from boot sequence:
 History
 -------
 
-- *1.0.0* (2015-02-13): First release.
+- **1.0.0** (*2015-02-16*): First release.
 
 *Enjoy!*
