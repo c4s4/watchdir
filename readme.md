@@ -57,6 +57,6 @@ To remove it from boot sequence:
 History
 -------
 
-- *1.0.0* (2015-02-13): First release.
+- **1.0.0** (*2015-02-16*): First release.
 
 *Enjoy!*
