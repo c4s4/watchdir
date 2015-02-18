@@ -4,7 +4,7 @@ SOURCE=$(NAME).go
 CONFIG=$(NAME).yml
 BUILD_DIR=build
 DEPLOY=casa@sweetohm.net:/home/web/watchdir
-OS_LIST="linux freebsd openbsd darwin windows"
+OS_LIST="linux freebsd netbsd openbsd darwin windows"
 
 all: clean test build
 
