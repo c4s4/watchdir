@@ -37,7 +37,7 @@ release: clean test build
 
 binary: clean test
 	mkdir -p $(BUILD_DIR)/$(NAME)
-	gox -os=$(OS_LIST) -output=$(BUILD_DIR)/$(NAME)/{{.Dir}}_{{.OS}}_{{.Arch}}
+	gox -os=$(OS_LIST) -output=$(BUILD_DIR)/$(NAME)/{{.Dir}}-{{.OS}}-{{.Arch}}
 	cp license readme.md $(BUILD_DIR)/$(NAME)
 	cd $(BUILD_DIR) && tar cvf $(NAME)-$(VERSION).tar $(NAME)/*
 	gzip $(BUILD_DIR)/$(NAME)-$(VERSION).tar
