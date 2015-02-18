@@ -35,7 +35,7 @@ release: clean test build
 	git tag "RELEASE-$(VERSION)"
 	git push --tag
 
-binary: clean
+binary: clean test
 	mkdir -p $(BUILD_DIR)/$(NAME)
 	gox -os=$(OS_LIST) -output=$(BUILD_DIR)/$(NAME)/{{.Dir}}_{{.OS}}_{{.Arch}}
 	cp license readme.md $(BUILD_DIR)/$(NAME)
