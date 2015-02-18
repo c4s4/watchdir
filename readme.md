@@ -15,6 +15,7 @@ There are binaries for following platforms:
 
 - Linux 386, amd64 and arm.
 - FreeBSD 386, amd64 and arm.
+- NetBSD 386, amd64 and arm.
 - OpenBSD 386 and amd64.
 - Darwin 386 and amd64.
 - Windows 386 and amd64.
