@@ -4,7 +4,7 @@ SOURCE=$(NAME).go
 CONFIG=$(NAME).yml
 BUILD_DIR=build
 DEPLOY=casa@sweetohm.net:/home/web/watchdir
-PLATFORM=$(subst /,-,$(lastword $(shell go version)))
+OS_LIST="linux freebsd openbsd darwin windows"
 
 all: clean test build
 
@@ -35,11 +35,10 @@ release: clean test build
 	git tag "RELEASE-$(VERSION)"
 	git push --tag
 
-binary: clean build
-	mkdir -p $(BUILD_DIR)/TMP
-	mv $(BUILD_DIR)/$(NAME) $(BUILD_DIR)/TMP
-	mv $(BUILD_DIR)/TMP $(BUILD_DIR)/$(NAME)
+binary: clean
+	mkdir -p $(BUILD_DIR)/$(NAME)
+	gox -os=$(OS_LIST) -output=$(BUILD_DIR)/$(NAME)/{{.Dir}}_{{.OS}}_{{.Arch}}
 	cp license readme.md $(BUILD_DIR)/$(NAME)
-	cd $(BUILD_DIR) && tar cvf $(NAME)-$(PLATFORM)-$(VERSION).tar $(NAME)/*
-	gzip $(BUILD_DIR)/$(NAME)-$(PLATFORM)-$(VERSION).tar
-	scp $(BUILD_DIR)/$(NAME)-$(PLATFORM)-$(VERSION).tar.gz $(DEPLOY)
+	cd $(BUILD_DIR) && tar cvf $(NAME)-$(VERSION).tar $(NAME)/*
+	gzip $(BUILD_DIR)/$(NAME)-$(VERSION).tar
+	scp $(BUILD_DIR)/$(NAME)-$(VERSION).tar.gz $(DEPLOY)
