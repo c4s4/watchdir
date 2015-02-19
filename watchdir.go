@@ -15,6 +15,7 @@ import (
 	"sync"
 )
 
+var VERSION = "UNKNOWN"
 var HELP = `watchdir [config(s)]
 config Configuration file(s) (defaults to '~/.watchdir.yml' or '/etc/watchdir.yml')`
 var USER_CONFIG = "~/.watchdir.yml"
@@ -98,7 +99,7 @@ func WatchDirectory(directory string, events Events, waitGroup *sync.WaitGroup) 
 		case event := <-watcher.Events:
 			for e, command := range events {
 				if event.Op&EventCode(e) == EventCode(e) {
-				 log.Println("Triggered event", event)
+					log.Println("Triggered event", event)
 					ExecuteCommand(command, event.Name, e)
 				}
 			}
@@ -158,6 +159,7 @@ func ConfigFile() (string, error) {
 }
 
 func main() {
+	log.Println("Starting watchdir version", VERSION)
 	configurationFile, err := ConfigFile()
 	if err != nil {
 		log.Fatal(err)
