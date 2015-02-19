@@ -51,7 +51,8 @@ check:
 binaries: clean test
 	@echo "${YELLOW}Generating binaries${CLEAR}"
 	mkdir -p $(BUILD_DIR)/$(NAME)
-	gox -os=$(OS_LIST) -output=$(BUILD_DIR)/$(NAME)/{{.Dir}}-{{.OS}}-{{.Arch}}
+	sed -e s/UNKNOWN/$(VERSION)/ $(NAME).go > $(BUILD_DIR)/$(NAME).go
+	cd $(BUILD_DIR) && gox -os=$(OS_LIST) -output=$(NAME)/$(NAME)-{{.OS}}-{{.Arch}}
 
 archive: binaries
 	@echo "${YELLOW}Generating distribution archive${CLEAR}"
@@ -65,3 +66,16 @@ publish: archive
 
 release: check publish tag
 	@echo "${YELLOW}Application released${CLEAR}"
+
+help:
+	@echo "${YELLOW}clean${CLEAR}    Clean generated files"
+	@echo "${YELLOW}test${CLEAR}     Run unit tests"
+	@echo "${YELLOW}build${CLEAR}    Build application"
+	@echo "${YELLOW}run${CLEAR}      Run application"
+	@echo "${YELLOW}install${CLEAR}  Install application"
+	@echo "${YELLOW}tag${CLEAR}      Tag project"
+	@echo "${YELLOW}check${CLEAR}    Chek project for release"
+	@echo "${YELLOW}binaries${CLEAR} Generate binaries"
+	@echo "${YELLOW}archive${CLEAR}  Generate distribution archive"
+	@echo "${YELLOW}publish${CLEAR}  Publish distribution archive"
+	@echo "${YELLOW}release${CLEAR}  Release application"
