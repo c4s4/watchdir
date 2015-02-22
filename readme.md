@@ -67,11 +67,11 @@ Logs are written to file */var/log/watchdir.log*.
 
 To make your service start at boot time:
 
-    update-rc.d watchdir defaults
+    sudo update-rc.d watchdir defaults
 
 To remove it from boot sequence:
 
-    update-rc.d -f watchdir remove
+    sudo update-rc.d -f watchdir remove
 
 History
 -------
