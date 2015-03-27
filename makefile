@@ -56,7 +56,7 @@ binaries: clean test
 
 archive: binaries
 	@echo "${YELLOW}Generating distribution archive${CLEAR}"
-	cp license readme.md $(BUILD_DIR)/$(NAME)
+	cp LICENSE README.md CHANGELOG.md $(BUILD_DIR)/$(NAME)
 	cd $(BUILD_DIR) && tar cvf $(NAME)-$(VERSION).tar $(NAME)/*
 	gzip $(BUILD_DIR)/$(NAME)-$(VERSION).tar
 
