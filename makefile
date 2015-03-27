@@ -37,7 +37,7 @@ install: clean test build
 
 tag:
 	@echo "${YELLOW}Tagging project${CLEAR}"
-	git tag "RELEASE-$(VERSION)"
+	git tag "$(VERSION)"
 	git push --tag
 
 check:
