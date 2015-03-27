@@ -1,8 +1,8 @@
 Change Log
 ----------
 
-Unreleased
-----------
+1.0.2: 2015-03-27
+-----------------
 
 Project reorganization.
 
