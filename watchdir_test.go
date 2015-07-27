@@ -16,7 +16,7 @@ func TestExpandCommand(t *testing.T) {
 func TestExpandUser(t *testing.T) {
 	user, _ := user.Current()
 	e := "/home/" + user.Username + "/foo"
-    f := "/Users/" + user.Username + "/foo"
+	f := "/Users/" + user.Username + "/foo"
 	a := ExpandUser("~/foo")
 	if e != a && f != a {
 		t.Error("User directory not expanded as expected", e, "!=", a)
