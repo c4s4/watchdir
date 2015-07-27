@@ -1,5 +1,11 @@
 # Semantic changelog: https://github.com/c4s4/changelog
 
+- version: ?.?.?
+  date:    2015-??-??
+  summary: ???
+  fixed:
+  - "Go fmt sources."
+
 - version: 1.1.0
   date:    2015-07-27
   summary: New release process
