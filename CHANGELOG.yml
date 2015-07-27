@@ -1,0 +1,20 @@
+# Semantic changelog: https://github.com/c4s4/changelog
+
+- version: 1.1.0
+  date:    2015-07-27
+  summary: New release process
+  added:
+  - "Changelog made YAML (instead of Markodwn)."
+  - "Generate distribution archive with appropriate document formats."
+
+- version: 1.0.2
+  date:    2015-03-27
+  summary: Project reorganization
+
+- version: 1.0.1
+  date:    2015-02-19
+  summary: Log version on startup
+
+- version: 1.0.0
+  date:    2015-02-18
+  summary: First release
