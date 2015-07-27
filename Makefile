@@ -1,81 +1,51 @@
-VERSION=1.0.2
 NAME=watchdir
-SOURCE=$(NAME).go
-CONFIG=$(NAME).yml
+VERSION=$(shell changelog release version)
 BUILD_DIR=build
-DEPLOY=casa@sweetohm.net:/home/web/watchdir
 OS_LIST="!plan9"
 
-YELLOW=\033[93m
-RED=\033[91m
+YELLOW=\033[1m\033[93m
+CYAN=\033[1m\033[96m
 CLEAR=\033[0m
 
-all: clean test build
+.PHONY: build
+
+help:
+	@echo "$(CYAN)clean$(CLEAR)    Clean generated files"
+	@echo "$(CYAN)test$(CLEAR)     Run unit tests"
+	@echo "$(CYAN)build$(CLEAR)    Build application for current platform"
+	@echo "$(CYAN)compile$(CLEAR)  Generate binaries for all platforms"
+	@echo "$(CYAN)archive$(CLEAR)  Generate distribution archive"
+	@echo "$(CYAN)release$(CLEAR)  Release application"help:
+	
 
 clean:
-	@echo "${YELLOW}Cleaning generated files${CLEAR}"
+	@echo "$(YELLOW)Cleaning generated files$(CLEAR)"
 	rm -rf $(BUILD_DIR)
 
 test:
-	@echo "${YELLOW}Running unit tests${CLEAR}"
+	@echo "$(YELLOW)Running unit tests$(CLEAR)"
 	go test
 
 build:
-	@echo "${YELLOW}Building application${CLEAR}"
+	@echo "$(YELLOW)Building application for current platform$(CLEAR)"
 	mkdir -p $(BUILD_DIR)
-	go build $(SOURCE)
-	mv $(NAME) $(BUILD_DIR)
-
-run: clean test build
-	@echo "${YELLOW}Running application${CLEAR}"
-	go run $(SOURCE) $(CONFIG)
-
-install: clean test build
-	@echo "${YELLOW}Installing application${CLEAR}"
-	sudo cp $(BUILD_DIR)/$(NAME) /opt/bin/
-	sudo cp $(NAME).init /etc/init.d/watchdir
-
-tag:
-	@echo "${YELLOW}Tagging project${CLEAR}"
-	git tag "$(VERSION)"
-	git push --tag
-
-check:
-	@echo "${YELLOW}Chekcing project for release${CLEAR}"
-	@if [ `git rev-parse --abbrev-ref HEAD` != "master" ]; then \
-		echo "You must release on branch master"; \
-		exit 1; \
-	fi
-	git diff --quiet --exit-code HEAD || (echo "There are uncommitted changes"; exit 1)
-
-binaries: clean test
-	@echo "${YELLOW}Generating binaries${CLEAR}"
-	mkdir -p $(BUILD_DIR)/$(NAME)
 	sed -e s/UNKNOWN/$(VERSION)/ $(NAME).go > $(BUILD_DIR)/$(NAME).go
-	cd $(BUILD_DIR) && gox -os=$(OS_LIST) -output=$(NAME)/$(NAME)-{{.OS}}-{{.Arch}}
+	cd $(BUILD_DIR) && go build $(NAME).go
 
-archive: binaries
-	@echo "${YELLOW}Generating distribution archive${CLEAR}"
-	cp LICENSE README.md CHANGELOG.md $(BUILD_DIR)/$(NAME)
-	cd $(BUILD_DIR) && tar cvf $(NAME)-$(VERSION).tar $(NAME)/*
+compile: clean
+	@echo "$(YELLOW)Generating binaries for all platforms$(CLEAR)"
+	mkdir -p $(BUILD_DIR)/$(NAME)-$(VERSION)
+	sed -e s/UNKNOWN/$(VERSION)/ $(NAME).go > $(BUILD_DIR)/$(NAME).go
+	cd $(BUILD_DIR) && gox -os=$(OS_LIST) -output=$(NAME)-$(VERSION)/$(NAME)-{{.OS}}-{{.Arch}}
+
+archive: compile
+	@echo "$(YELLOW)Generating distribution archive$(CLEAR)"
+	cp LICENSE.txt $(BUILD_DIR)/$(NAME)-$(VERSION)
+	md2pdf README.md && mv README.pdf $(BUILD_DIR)/$(NAME)-$(VERSION)
+	changelog to html style > $(BUILD_DIR)/$(NAME)-$(VERSION)/CHANGELOG.html
+	cd $(BUILD_DIR) && tar cvf $(NAME)-$(VERSION).tar $(NAME)-$(VERSION)/*
 	gzip $(BUILD_DIR)/$(NAME)-$(VERSION).tar
 
-publish: archive
-	@echo "${YELLOW}Publishing distribution archive${CLEAR}"
-	scp $(BUILD_DIR)/$(NAME)-$(VERSION).tar.gz $(DEPLOY)
-
-release: check publish tag
-	@echo "${YELLOW}Application released${CLEAR}"
-
-help:
-	@echo "${YELLOW}clean${CLEAR}    Clean generated files"
-	@echo "${YELLOW}test${CLEAR}     Run unit tests"
-	@echo "${YELLOW}build${CLEAR}    Build application"
-	@echo "${YELLOW}run${CLEAR}      Run application"
-	@echo "${YELLOW}install${CLEAR}  Install application"
-	@echo "${YELLOW}tag${CLEAR}      Tag project"
-	@echo "${YELLOW}check${CLEAR}    Chek project for release"
-	@echo "${YELLOW}binaries${CLEAR} Generate binaries"
-	@echo "${YELLOW}archive${CLEAR}  Generate distribution archive"
-	@echo "${YELLOW}publish${CLEAR}  Publish distribution archive"
-	@echo "${YELLOW}release${CLEAR}  Release application"
+release: archive
+	@echo "$(YELLOW)Releasing application$(CLEAR)"
+	release

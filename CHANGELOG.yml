@@ -2,9 +2,10 @@
 
 - version: 1.1.0
   date:    2015-07-27
-  summary: ???
+  summary: New release process
   added:
   - "Changelog made YAML (instead of Markodwn)."
+  - "Generate distribution archive with appropriate document formats."
 
 - version: 1.0.2
   date:    2015-03-27
