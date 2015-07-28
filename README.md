@@ -9,7 +9,7 @@ Tool to watch directories and run commands when given file events are triggered 
 Installation
 ------------
 
-Download binary archive at <http://sweetohm.net/watchdir/>, unzip it and copy the binary executable for your platform (named *watchdir-os-arch*) somewhere in yout *PATH* and rename it *watchdir*. This executable doesn't need any dependency or virtual machine to run.
+Download binary archive at <https://github.com/c4s4/watchdir/releases>, unzip it and copy the binary executable for your platform (named *watchdir-os-arch*) somewhere in yout *PATH* and rename it *watchdir*. This executable doesn't need any dependency or virtual machine to run.
 
 There are binaries for following platforms:
 
